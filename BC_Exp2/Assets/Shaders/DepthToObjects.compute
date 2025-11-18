@@ -1,0 +1,112 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+RWStructuredBuffer<float4> ObjectPositions;
+RWStructuredBuffer<float2> jitter_uv;
+//RWStructuredBuffer<float3> LifeBuffer;
+RWStructuredBuffer<float> SizeBuffer;
+RWStructuredBuffer<float> lifeTimeBuffer; // THe buffer which keeps the remainning lifeTime;
+StructuredBuffer<float2> jitter_uv_update_buffer;
+float deltaTime;
+float dotLifeTime;
+Texture2D<float4> DepthTexture;
+float4x4 _InverseProjectionMatrix;
+float4x4 _CameraToWorldMatrix;
+float4x4 _ProjectionMatrix;
+
+float dotFieldWidthRads;
+float dotFieldHeightRads;
+
+float step_x;
+float step_y;
+
+int object_x;
+int object_y;
+
+float fovx_rads;
+float fovy_rads;
+float PI = 3.14159;
+
+float nearclipplane;
+
+float2 GetUV(uint3 id, uint3 textureDimensions)
+{
+
+    // Calculate the angle offsets from the center of the camera
+    float angleX = -dotFieldWidthRads / 2 + id.x * step_x;
+    float angleY = -dotFieldHeightRads / 2 + id.y * step_y;
+
+    float3 direction = normalize( float3(tan(angleX), tan(angleY), 1.0f) ); // -z or +z?
+
+    float4 projPos = mul(_ProjectionMatrix, float4(direction[0], direction[1], direction[2], 1.0f));
+    float3 ndcPos = float3(projPos.x / projPos.w, projPos.y / projPos.w, projPos.z / projPos.w);
+    float2 UV = float2(ndcPos[0] * 0.5f + 0.5f, ndcPos[1] * 0.5f + 0.5f);
+    
+    int object_index = id.x + id.y * object_x;
+    
+    return(UV + jitter_uv[object_index]);
+    //return(float2( UV[0] + jitter_uv[object_index][0], UV[1] + jitter_uv[object_index][1]));
+
+}
+
+SamplerState samplerDepthTexture;
+uniform float4 camera_pos;
+float base_scale;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here
+
+    int object_index = id.x + id.y * object_x;
+
+    ////
+    // 1. Manage Time
+    float lifeTime = lifeTimeBuffer[object_index] - deltaTime;
+
+    float reset_value = ceil(-min(lifeTime, 0.0f)) * dotLifeTime;
+
+    if (lifeTime < 0.0){
+        jitter_uv[object_index] = jitter_uv_update_buffer[object_index];
+    }
+
+    lifeTime += reset_value;
+    
+    lifeTimeBuffer[object_index] = lifeTime;
+    //
+    ////
+
+
+    uint3 textureDimemsinos = uint3(256, 256, 1);
+    float2 uv = GetUV(id, textureDimemsinos);
+    uv.y = 1 - uv.y;
+    
+
+    // float4 depthValue = DepthTexture.SampleLevel(samplerDepthTexture, uv, 0).x;
+
+    float depthValue = DepthTexture.SampleLevel(samplerDepthTexture, uv, 0).r;
+
+
+    float4 screenPos = float4((uv * 2) -1, depthValue, 1.0);
+
+    // Convert screen space to view space
+    float4 viewPos = mul(_InverseProjectionMatrix, screenPos);
+    viewPos /= viewPos.w;
+    // viewPos.y =  - viewPos.y;
+
+    // Convert view space to world space
+    float4 worldPos = mul(_CameraToWorldMatrix, viewPos);
+    
+    ObjectPositions[object_index] = worldPos;
+
+    // Calculate for scale
+    float scale_factor = length(worldPos - camera_pos) * 0.5f;
+    SizeBuffer[object_index] = scale_factor * base_scale;
+
+    
+
+
+}
