@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UXF;
+using UnityEngine.InputSystem;
 
 
 public class experimentGenerator : MonoBehaviour
@@ -13,12 +14,7 @@ public class experimentGenerator : MonoBehaviour
     public bool debugMode = true;
     public bool sessionHasBeenCreated = false;
 
-    //public bool triggerCablibration = true;
-
-    
-
-
-      
+    //public bool triggerCablibration = true;      
     //public ChangeResetBoxColor changeBoxColor;
 
     private bool bodyDimensionsSet;
@@ -31,11 +27,8 @@ public class experimentGenerator : MonoBehaviour
 
     public Transform handTransform;
 
-    
-    
-
-    
-
+    public InputActionReference primaryButtonAction;
+ 
     public void Start()
     {
         
@@ -50,7 +43,6 @@ public class experimentGenerator : MonoBehaviour
     public void generateSession()
     {
         Debug.Log("Generating experiment, blocks, and trials.");
-        
 
         UXF_Session.settings.SetValue("eyeHeight", 1);
         UXF_Session.settings.SetValue("armLength", 1);
@@ -65,8 +57,6 @@ public class experimentGenerator : MonoBehaviour
 
         bool isLeftHanded = UXF_Session.settings.GetBool("isLeftHanded");
         int isLeftHandedInt = isLeftHanded ? -1 : 1; // So that xPos * isLeftHandedInt will flip the xPos (used below)
-        
-
 
         List<float> gravity_xyz = UXF_Session.settings.GetFloatList("gravity_xyz");        
         Physics.gravity = new Vector3(gravity_xyz[0], gravity_xyz[1], gravity_xyz[2]);
@@ -155,6 +145,11 @@ public class experimentGenerator : MonoBehaviour
     
     void repositionDebugObjects()
     {
+        if (sessionHasBeenCreated == false)
+        {
+            generateSession();
+        }
+
         var debugParentGO = GameObject.Find("CatchingEnvironment/DebugObjects");
 
         if( debugParentGO is null ){ return; }
@@ -202,15 +197,30 @@ public class experimentGenerator : MonoBehaviour
         launchPlane.transform.localPosition = new Vector3(isLeftHandedInt * launchPlanePosition_XYZ[0], launchPlanePosition_XYZ[1], launchPlanePosition_XYZ[2]);
         launchPlane.transform.localScale = new Vector3(launchPlaneWidth, launchPlaneHeight, 0.01f);
 
-        Vector3 resetControllerPos = new Vector3(isLeftHandedInt* 0.6f * armLength, 0.71f * eyeHeight, 0.43f * armLength);
-        resetController.transform.position = resetControllerPos;
+        // Vector3 resetControllerPos = new Vector3(isLeftHandedInt* 0.6f * armLength, 0.71f * eyeHeight, 0.43f * armLength);
+        // resetController.transform.position = resetControllerPos;
 
-        resetController.SetActive(true);
-        resetControllerLocation = true;
+        // resetController.SetActive(true);
+        // resetControllerLocation = true;
     }
 
     public void placeAndLaunchBall()
     {
+
+        if (trialInProgress == true)
+        {
+            return;
+        }
+
+        if (sessionHasBeenCreated == false)
+        {
+            generateSession();
+        }
+
+        // if (debugMode == false & changeBoxColor.flag)
+        // {
+        // placeAndLaunchBall();
+        // }
 
         GameObject Ball = Instantiate(ballPrefab, new Vector3(-1.8f, 1.0f, 18.0f), Quaternion.identity);// chanaged from 0,-10,0-6.5f, 1.5f, 18.0f
         UXF_Session.trackedObjects.Add(Ball.GetComponent<BallTracker>());
@@ -309,7 +319,7 @@ public class experimentGenerator : MonoBehaviour
 
     }
 
-    void sampleEyeHeightAndArmLength()
+    public void sampleEyeHeightAndArmLength()
     {
 
         float eyeHeight = Camera.main.transform.position.y;
@@ -350,9 +360,12 @@ public class experimentGenerator : MonoBehaviour
         // Calculate postional offset between CameraRig and Camera
         Vector3 offsetPos = mainCamera.position - cameraParent.position;
         // Reposition CameraRig to desired position minus offset
-        cameraParent.position = (targetPosition - offsetPos);
+        cameraParent.position = targetPosition - offsetPos;
 
         Debug.Log("Seat recentered!");
+
+        repositionDebugObjects();
+
     }
     public void Update()
     {
@@ -417,28 +430,28 @@ public class experimentGenerator : MonoBehaviour
 
         //}
         
-        // Step 3:  launch balls
-        if (trialInProgress == false)
-        {
-            if (Input.GetKeyDown(KeyCode.Space) || OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger))
-            {
-                if (sessionHasBeenCreated == false)
-                {
-                    generateSession();
-                }
+        // // Step 3:  launch balls
+        // if (trialInProgress == false)
+        // {
+        //     if (Input.GetKeyDown(KeyCode.Space) || OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger))
+        //     {
+        //         if (sessionHasBeenCreated == false)
+        //         {
+        //             generateSession();
+        //         }
 
-                if (debugMode == false )//& changeBoxColor.flag)
-                {
-                    placeAndLaunchBall();
-                }
-                else if(debugMode == true)
-                {
-                    placeAndLaunchBall();
-                }
+        //         if (debugMode == false )//& changeBoxColor.flag)
+        //         {
+        //             placeAndLaunchBall();
+        //         }
+        //         else if(debugMode == true)
+        //         {
+        //             placeAndLaunchBall();
+        //         }
 
-                return;
-            }
-        }
+        //         return;
+        //     }
+        // }
 
 
 

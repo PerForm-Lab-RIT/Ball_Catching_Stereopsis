@@ -165,108 +165,110 @@ public class BallBehavior : MonoBehaviour
                   
     }
 
-    // void OnCollisionEnter(Collision collision){
-    //     // Only proceed if the collision is with a paddle during an active trial
-    //     if (!collision.gameObject.CompareTag("Paddle")) return;
-    //     if (UXF_Session.CurrentTrial.status != TrialStatus.InProgress) return;
+    void OnCollisionEnter(Collision collision){
 
-    //     // Ensure there is a contact point
-    //     if (collision.contactCount == 0) return;
-    //     ContactPoint contact = collision.contacts[0];
+        // Only proceed if the collision is with a paddle during an active trial
+        if (collision.gameObject.layer != LayerMask.NameToLayer("collision objects")) return;
 
-    //     // Debug visualization
-    //     Debug.DrawRay(contact.point, contact.normal, Color.green, 2f);
+        if (UXF_Session.CurrentTrial.status != TrialStatus.InProgress) return;
 
-    //     // Get the Rigidbody for this ball
-    //     Rigidbody rb = GetComponent<Rigidbody>();
-    //     if (rb == null) return;
-
-    //     // Play contact sound
-    //     AudioSource.PlayClipAtPoint(contactSound, contact.point, 1.0f);
-
-    //     // Stop any motion
-    //     rb.linearVelocity = Vector3.zero;
-    //     rb.angularVelocity = Vector3.zero;
-    //     rb.useGravity = false;
-
-    //     // Add a FixedJoint to attach the ball to the paddle’s rigidbody
-    //     // (If the paddle is kinematic, this still works correctly in Unity physics)
-    //     FixedJoint joint = gameObject.AddComponent<FixedJoint>();
-    //     joint.connectedBody = collision.rigidbody;  // Connect to the paddle’s rigidbody
-    //     joint.breakForce = Mathf.Infinity;
-    //     joint.breakTorque = Mathf.Infinity;
-
-    //     // Record relevant data for your UXF trial
-    //     UXF_Session.CurrentTrial.result["isCaughtQ"] = true;
-    //     hasBeenCaughtQ = true;
-    //     contactLocOnPaddle = collision.transform.InverseTransformPoint(contact.point);
-    //     contactLocinWorld = contact.point;
-    //     timeOfContact = Time.time;
-
-    //     // Optional: adjust local offset for left vs. right handedness
-    //     Vector3 localPos = transform.localPosition;
-    //     float offset = transform.localScale.x / 2.0f;
-    //     localPos.x = UXF_Session.settings.GetBool("isLeftHanded") ? offset : -offset;
-    //     transform.localPosition = localPos;
-
-    //     // Log
-    //     Debug.Log("Ball attached to paddle with FixedJoint.");
-    //     isInFlight = false;
-    // }
-
-
-
-    void OnCollisionEnter(Collision collision)
-    {
-
-        Debug.DrawRay(collision.contacts[0].point, collision.contacts[0].normal, Color.green, 2, false);
-        // Debug.Log( "collide (name) : " + collision.collider.gameObject.name );
-        // Debug.Log( "collide (tag) : " + collision.collider.gameObject.tag );
-        gameObject.layer =0 ;
-
-        
-
-        Rigidbody rb = gameObject.GetComponent<Rigidbody>();
-
+        // Ensure there is a contact point
+        if (collision.contactCount == 0) return;
         ContactPoint contact = collision.contacts[0];
-        gameObject.transform.position = contact.point;
+
+        // Debug visualization
+        Debug.DrawRay(contact.point, contact.normal, Color.green, 2f);
+
+        // Get the Rigidbody for this ball
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb == null) return;
+
+        // Play contact sound
+        AudioSource.PlayClipAtPoint(contactSound, contact.point, 1.0f);
+
+        // Stop any motion
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.useGravity = false;
+
+        // Add a FixedJoint to attach the ball to the paddle’s rigidbody
+        // (If the paddle is kinematic, this still works correctly in Unity physics)
+        FixedJoint joint = gameObject.AddComponent<FixedJoint>();
+        joint.connectedBody = collision.rigidbody;  // Connect to the paddle’s rigidbody
+        joint.breakForce = Mathf.Infinity;
+        joint.breakTorque = Mathf.Infinity;
+
+        // Record relevant data for your UXF trial
+        UXF_Session.CurrentTrial.result["isCaughtQ"] = true;
+        hasBeenCaughtQ = true;
+        contactLocOnPaddle = collision.transform.InverseTransformPoint(contact.point);
+        contactLocinWorld = contact.point;
+        timeOfContact = Time.time;
+
+        // Optional: adjust local offset for left vs. right handedness
+        Vector3 localPos = transform.localPosition;
+        float offset = transform.localScale.x / 2.0f;
+        localPos.x = UXF_Session.settings.GetBool("isLeftHanded") ? offset : -offset;
+        transform.localPosition = localPos;
+
+        // Log
+        Debug.Log("Ball attached to paddle with FixedJoint.");
+        isInFlight = false;
+    }
 
 
-        if( collision.contacts[0].otherCollider.CompareTag("Paddle") && UXF_Session.CurrentTrial.status == TrialStatus.InProgress)  {
 
-            AudioSource.PlayClipAtPoint(contactSound, contact.point, 1.0f);
+    // void OnCollisionEnter(Collision collision)
+    // {
 
-            rb.constraints = RigidbodyConstraints.FreezeAll;
-            rb.useGravity = false;
-            rb.isKinematic = true;
-            rb.linearVelocity = new Vector3(0f, 0f, 0f);
-
-            gameObject.GetComponent<Transform>().SetParent(collision.contacts[0].otherCollider.transform.parent);
-
-
-            UXF_Session.CurrentTrial.result["isCaughtQ"] = true;
-            hasBeenCaughtQ = true;
-            contactLocOnPaddle = collision.contacts[0].otherCollider.transform.InverseTransformPoint(contact.point);
-            contactLocinWorld = contact.point;
-
-            if( UXF_Session.settings.GetBool("isLeftHanded") ){
-                transform.localPosition = new Vector3( transform.localScale.x/2.0f, transform.localPosition.y, transform.localPosition.z );
-            }
-            else{
-                transform.localPosition = new Vector3( -transform.localScale.x/2.0f, transform.localPosition.y, transform.localPosition.z );
-            }
-
-
-            timeOfContact = Time.time;
-        }
-
-        Debug.Log("Ball has collided and is now a child.");
+    //     Debug.DrawRay(collision.contacts[0].point, collision.contacts[0].normal, Color.green, 2, false);
+    //     // Debug.Log( "collide (name) : " + collision.collider.gameObject.name );
+    //     // Debug.Log( "collide (tag) : " + collision.collider.gameObject.tag );
+    //     gameObject.layer =0 ;
 
         
 
-        isInFlight = false;
+    //     Rigidbody rb = gameObject.GetComponent<Rigidbody>();
 
-    }
+    //     ContactPoint contact = collision.contacts[0];
+    //     gameObject.transform.position = contact.point;
+
+
+    //     if( collision.contacts[0].otherCollider.CompareTag("Paddle") && UXF_Session.CurrentTrial.status == TrialStatus.InProgress)  {
+
+    //         AudioSource.PlayClipAtPoint(contactSound, contact.point, 1.0f);
+
+    //         rb.constraints = RigidbodyConstraints.FreezeAll;
+    //         rb.useGravity = false;
+    //         rb.isKinematic = true;
+    //         rb.linearVelocity = new Vector3(0f, 0f, 0f);
+
+    //         gameObject.GetComponent<Transform>().SetParent(collision.contacts[0].otherCollider.transform.parent);
+
+
+    //         UXF_Session.CurrentTrial.result["isCaughtQ"] = true;
+    //         hasBeenCaughtQ = true;
+    //         contactLocOnPaddle = collision.contacts[0].otherCollider.transform.InverseTransformPoint(contact.point);
+    //         contactLocinWorld = contact.point;
+
+    //         if( UXF_Session.settings.GetBool("isLeftHanded") ){
+    //             transform.localPosition = new Vector3( transform.localScale.x/2.0f, transform.localPosition.y, transform.localPosition.z );
+    //         }
+    //         else{
+    //             transform.localPosition = new Vector3( -transform.localScale.x/2.0f, transform.localPosition.y, transform.localPosition.z );
+    //         }
+
+
+    //         timeOfContact = Time.time;
+    //     }
+
+    //     Debug.Log("Ball has collided and is now a child.");
+
+        
+
+    //     isInFlight = false;
+
+    // }
 
     public void removeBall()
     {
