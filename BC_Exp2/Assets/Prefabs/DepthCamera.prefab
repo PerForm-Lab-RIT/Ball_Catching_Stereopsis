@@ -27,9 +27,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3372651095359050634}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -66,14 +66,14 @@ Camera:
     width: 1
     height: 1
   near clip plane: 1
-  far clip plane: 2
+  far clip plane: 180
   field of view: 109.899
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 320
   m_RenderingPath: 1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -106,10 +106,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   object_base_scale: 0.003
-  dotFieldWidthDegs: 40
-  dotFieldHeightDegs: 40
-  object_x: 64
-  object_y: 64
+  dotFieldWidthDegs: 50
+  dotFieldHeightDegs: 50
+  object_x: 88
+  object_y: 88
   object_increment: 8
   depthShader: {fileID: 4800000, guid: f12a0996a0da69e4f95b8c6102e2d3fe, type: 3}
   depthTexture: {fileID: 8400000, guid: b4baf0409e4915e40aad470dd16a2048, type: 2}

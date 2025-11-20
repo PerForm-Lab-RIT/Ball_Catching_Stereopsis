@@ -7,27 +7,27 @@
 
     "eyeHeight": 1,
     "armLength": 1,
-    "isleftHanded": false,
+    "isLeftHanded": false,
 
     "launchPlaneWidth": 3,
     "launchPlaneHeight": 1.5,
-    "launchPlanePosition_XYZ": [ -1.8, 1, 18.0 ],
+    "launchPlanePosition_XYZ": [ -2.8, 1, 18.0 ],
 
     "secondsToTimeOutFlight": 2.5,
     "secondsToPlaceBall": 1.0,
     "usePupilLabs": false,
 
     "initialBallRadiusM": 0.1, 
-    "secondsToPassage_minMax": [1.0,1.3],
+    "secondsToPassage_minMax": [1.4, 1.8],
 
     "passingHeightInHeadHeights_minMax": [ 0.75, 1.25 ],
-    "passingDistancesInArmLengths": [0.2, 0.4, 0.6],
-
+    "passingDistancesInArmLengths": [ 0.4, 0.6, 0.8 ],
+    
     "blockList": [ "practiceBlock", "block1" ],
 
     "practiceBlock_trialRepetitions": [ 2, 2, 2],
     "practiceBlock_expansionGains": [ 1.0 ],
-    "practiceBlock_passingDistanceInArmLengths":  [ 0.2, 0.4, 0.6 ],
+    "practiceBlock_passingDistanceInArmLengths":  [ 0.4, 0.6, 0.8 ],
 
     "block1_trialRepetitions": [ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ],
     "block1_expansionGains": [ 0.0, 0.5, 0.75, 1.0, 1.25, 1.5 ],

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UXF;
 using UnityEngine.InputSystem;
-
+using UnityEngine.XR;
 
 public class experimentGenerator : MonoBehaviour
 {
@@ -43,10 +43,6 @@ public class experimentGenerator : MonoBehaviour
     public void generateSession()
     {
         Debug.Log("Generating experiment, blocks, and trials.");
-
-        UXF_Session.settings.SetValue("eyeHeight", 1);
-        UXF_Session.settings.SetValue("armLength", 1);
-        UXF_Session.settings.SetValue("isLeftHanded", false);
         
         // Debug mode is not fully implemented, but one could take advantage of this property..
         // e.g. if debugmode, show additional diagnostic information
@@ -90,7 +86,6 @@ public class experimentGenerator : MonoBehaviour
                     for (int rep = 1; rep <= trialRepetitions[count]; rep++)
                     {
 
-
                         Trial newTrial = block.CreateTrial();
 
                         // Store expansionGain, passingDistance, repetitionNumber
@@ -106,10 +101,11 @@ public class experimentGenerator : MonoBehaviour
                         newTrial.settings.SetValue("passingHeightInHeadHeights", passingHeightInHeadHeights);
 
                         // Randomize passing position
-                        List<float> ballPassingPos_XYZ = new List<float>{ isLeftHandedInt * armLength  * dist,
-                            eyeHeight * passingHeightInHeadHeights,
-                            0};
-                        newTrial.settings.SetValue("ballPassingPos_XYZ", ballPassingPos_XYZ);
+                        // List<float> ballPassingPos_XYZ = new List<float>{ isLeftHandedInt * armLength  * dist,
+                        //     eyeHeight * passingHeightInHeadHeights,
+                        //     0};
+                            
+                        // newTrial.settings.SetValue("ballPassingPos_XYZ", ballPassingPos_XYZ);
                         newTrial.settings.SetValue("passingDistanceInArmLengths", dist);
 
                         // Randomize ballInitialPos_XYZ
@@ -120,13 +116,13 @@ public class experimentGenerator : MonoBehaviour
                         List<float> ballInitialPos_XYZ = new List<float> { ballInitialPos_X, ballInitialPos_Y, ballInitialPos_Z };
                         newTrial.settings.SetValue("ballInitialPos_XYZ", ballInitialPos_XYZ);
 
-                        // Randomize initial velocity
-                        float ballInitialVel_X = (ballPassingPos_XYZ[0] - ballInitialPos_XYZ[0]) / secondsToPassage;
-                        float ballInitialVel_Y = (-0.5f * gravity_xyz[1] * secondsToPassage * secondsToPassage + (ballPassingPos_XYZ[1] - ballInitialPos_XYZ[1])) / secondsToPassage;
-                        float ballInitialVel_Z = (-initialBallRadiusM + ballPassingPos_XYZ[2] - ballInitialPos_XYZ[2]) / secondsToPassage;
+                        // // Randomize initial velocity
+                        // float ballInitialVel_X = (ballPassingPos_XYZ[0] - ballInitialPos_XYZ[0]) / secondsToPassage;
+                        // float ballInitialVel_Y = (-0.5f * gravity_xyz[1] * secondsToPassage * secondsToPassage + (ballPassingPos_XYZ[1] - ballInitialPos_XYZ[1])) / secondsToPassage;
+                        // float ballInitialVel_Z = (-initialBallRadiusM + ballPassingPos_XYZ[2] - ballInitialPos_XYZ[2]) / secondsToPassage;
 
-                        List<float> ballInitialVel_XYZ = new List<float> { ballInitialVel_X, ballInitialVel_Y, ballInitialVel_Z };
-                        newTrial.settings.SetValue("ballInitialVel_XYZ", new List<float> { ballInitialVel_X, ballInitialVel_Y, ballInitialVel_Z });
+                        // List<float> ballInitialVel_XYZ = new List<float> { ballInitialVel_X, ballInitialVel_Y, ballInitialVel_Z };
+                        // newTrial.settings.SetValue("ballInitialVel_XYZ", new List<float> { ballInitialVel_X, ballInitialVel_Y, ballInitialVel_Z });
                     }
 
                     count += 1;
@@ -145,11 +141,7 @@ public class experimentGenerator : MonoBehaviour
     
     void repositionDebugObjects()
     {
-        if (sessionHasBeenCreated == false)
-        {
-            generateSession();
-        }
-
+       
         var debugParentGO = GameObject.Find("CatchingEnvironment/DebugObjects");
 
         if( debugParentGO is null ){ return; }
@@ -202,6 +194,7 @@ public class experimentGenerator : MonoBehaviour
 
         // resetController.SetActive(true);
         // resetControllerLocation = true;
+
     }
 
     public void placeAndLaunchBall()
@@ -217,12 +210,23 @@ public class experimentGenerator : MonoBehaviour
             generateSession();
         }
 
+        if (bodyDimensionsSet == false)
+        {
+            Debug.Log("Body dimensions must be set before launching ball.");
+            return;
+        }
+
         // if (debugMode == false & changeBoxColor.flag)
         // {
         // placeAndLaunchBall();
         // }
 
-        GameObject Ball = Instantiate(ballPrefab, new Vector3(-1.8f, 1.0f, 18.0f), Quaternion.identity);// chanaged from 0,-10,0-6.5f, 1.5f, 18.0f
+        var tr = UXF_Session.NextTrial;
+        
+        List<float> ballInitialPos_XYZ = tr.settings.GetFloatList("ballInitialPos_XYZ");
+        Vector3 ballInitialPos = new Vector3(ballInitialPos_XYZ[0], ballInitialPos_XYZ[1], ballInitialPos_XYZ[2]);
+
+        GameObject Ball = Instantiate(ballPrefab, ballInitialPos, Quaternion.identity);// chanaged from 0,-10,0-6.5f, 1.5f, 18.0f
         UXF_Session.trackedObjects.Add(Ball.GetComponent<BallTracker>());
 
         StartCoroutine(executeTrial());
@@ -318,37 +322,62 @@ public class experimentGenerator : MonoBehaviour
         UXF_Session.CurrentTrial.result["ballInitialVel_z"] = ballInitialVel_XYZ[2];
 
     }
-
     public void sampleEyeHeightAndArmLength()
     {
-
         float eyeHeight = Camera.main.transform.position.y;
+
+        Transform handTransform = this.handTransform;
+
+        // Check if the Meta controller has a valid pose
+        UnityEngine.XR.InputDevice controllerDevice = isLeftHanded 
+            ? InputDevices.GetDeviceAtXRNode(XRNode.LeftHand) 
+            : InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
+
+        bool isTracked = false;
+        if (!controllerDevice.TryGetFeatureValue(UnityEngine.XR.CommonUsages.isTracked, out isTracked) || !isTracked)
+        {
+            Debug.LogWarning("Controller pose is not valid or not tracked.");
+            return; // Exit the method if the controller is not tracked
+        }
+
+        // If the controller is tracked, proceed with sampling
+        if (!isLeftHanded)
+        {
+            handTransform = GameObject.Find("RightHandAnchor").transform;
+        }
+        else
+        {
+            handTransform = GameObject.Find("LeftHandAnchor").transform;
+        }
 
         Vector3 handInHeadSpace_xyz = Camera.main.transform.InverseTransformPoint(handTransform.position);
         float armLength = handInHeadSpace_xyz.x;
-        if (armLength < 0)
-        {
-            isLeftHanded = true;
-            armLength = Mathf.Abs(armLength);
-        }
 
         UXF_Session.settings.SetValue("eyeHeight", eyeHeight);
         UXF_Session.settings.SetValue("armLength", armLength);
         UXF_Session.settings.SetValue("isLeftHanded", isLeftHanded);
 
+        bodyDimensionsSet = true;
+
+        resetSeatedPosition();
+        repositionDebugObjects();
     }
 
     public void resetSeatedPosition()
     {
         
+        if ( bodyDimensionsSet == false) 
+        {
+            Debug.Log("Body dimensions must be set before recentering seated position.");
+            return;
+        }
+
         Transform mainCamera = Camera.main.transform;
         Transform cameraParent = mainCamera.parent;
 
         Vector3 targetPosition = new Vector3(0.0f, 0.0f, 0.0f);
       
         targetPosition.y = UXF_Session.settings.GetFloat("eyeHeight");
-
-        //Vector3 camPos = Camera.main.transform.localToWorldMatrix.inverse.GetPosition();
 
         //ROTATION
         // Get current head heading in scene (y-only, to avoid tilting the floor)
@@ -363,8 +392,6 @@ public class experimentGenerator : MonoBehaviour
         cameraParent.position = targetPosition - offsetPos;
 
         Debug.Log("Seat recentered!");
-
-        repositionDebugObjects();
 
     }
     public void Update()

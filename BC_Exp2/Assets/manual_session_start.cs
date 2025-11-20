@@ -21,6 +21,8 @@ public class manual_session_start : MonoBehaviour
     
         // Start the session manually
         session.Begin("Interception_Stereopsis_Exp", "test", 1, null,  settings);
+
+        Debug.Log("Manual session started with settings from interception_expansion.json");
     }
 
 }

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UXF;
-using UnityEngine.Animations; // for parentConstraint
+// using UnityEngine.Animations; // for parentConstraint
+
 
 public class BallBehavior : MonoBehaviour
 {
@@ -12,6 +13,12 @@ public class BallBehavior : MonoBehaviour
     private bool switchedToRDS = false; // whether we've switched to DepthOnly layer
 
     public Renderer ballRenderer;    // assign in prefab
+
+    [Header("Fade Settings")]
+    [Tooltip("Slope (alpha change per meter) used while the ball approaches the world X-axis. Use a negative value to fade out as the distance shrinks.")]
+    public float alphaFadeSlope = -2f;
+    [Tooltip("Distance (meters) from the world X-axis where the ball becomes fully transparent (alpha = 0).")]
+    public float alphaZeroDistance = 13.0f;
 
     //****
     private bool isBeingLaunched;
@@ -26,6 +33,15 @@ public class BallBehavior : MonoBehaviour
 
     [System.NonSerialized] public float timeOfContact;
 
+    private bool isStuckToPaddle = false;
+    private Transform stuckPaddleTransform;
+
+    private Vector3 localContactPointOnPaddle;
+    private Vector3 localContactNormalOnPaddle;
+    private float stuckRadius = 0f;
+
+
+
 
     private Session UXF_Session;
 
@@ -34,41 +50,69 @@ public class BallBehavior : MonoBehaviour
         UXF_Session = GameObject.FindWithTag("Session").GetComponent<Session>();
         
     }
-    
+        
+    // void FixedUpdate()
+    // {
+    //     if (isStuckToPaddle && stuckPaddleTransform != null)
+    //     {
+    //         // Reconstruct the impact point and normal in world space
+    //         Vector3 worldContact = stuckPaddleTransform.TransformPoint(localContactPointOnPaddle);
+    //         Vector3 worldNormal  = stuckPaddleTransform.TransformDirection(localContactNormalOnPaddle);
+
+    //         // Place the ball so that its surface is at the contact point
+    //         Vector3 desiredPosition = worldContact + worldNormal * stuckRadius;
+    //         transform.position = desiredPosition;
+    //     }
+    // }
 
  public void placeBall()
     {
         
-        gameObject.layer = 8;
+        gameObject.layer = 1;
 
         isBeingLaunched = true;
         gameObject.GetComponent<MeshRenderer>().enabled = true;
+        SphereCollider sphereCollider = GetComponent<SphereCollider>();
+        if (sphereCollider != null)
+        {
+            sphereCollider.enabled = true;
+        }
         
 
         // Note that this places the ball in preparation for the NEXT trial.
         // The trial, and data output, begins upon launch.
         var tr = UXF_Session.NextTrial;
         
+        float secondsToPassage = tr.settings.GetFloat("secondsToPassage");
+        List<float> gravity_xyz = tr.settings.GetFloatList("gravity_xyz");
+        float initialBallRadiusM = UXF_Session.settings.GetFloat("initialBallRadiusM");
+        float eyeHeight = UXF_Session.settings.GetFloat("eyeHeight");
+        float armLength = UXF_Session.settings.GetFloat("armLength");
+        float passingHeightInHeadHeights = tr.settings.GetFloat("passingHeightInHeadHeights");
+        float passingDistanceInArmLengths = tr.settings.GetFloat("passingDistanceInArmLengths");
+
+        bool isLeftHanded = UXF_Session.settings.GetBool("isLeftHanded");
+        int isLeftHandedInt = isLeftHanded ? -1 : 1; // So that xPos * isLeftHandedInt will flip the xPos (used below)
 
         Rigidbody rb = gameObject.GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.None;
         rb.transform.parent = null;
 
+        List<float> ballPassingPos_XYZ = new List<float>{ isLeftHandedInt * armLength  * passingDistanceInArmLengths,
+                            eyeHeight * passingHeightInHeadHeights,
+                            0};
+                            
+        tr.settings.SetValue("ballPassingPos_XYZ", ballPassingPos_XYZ);
+
         List<float> ballInitialPos_XYZ = tr.settings.GetFloatList("ballInitialPos_XYZ");
-        List<float> ballPassingPos_XYZ = tr.settings.GetFloatList("ballPassingPos_XYZ");
-        List<float> ballInitialVel_XYZ = tr.settings.GetFloatList("ballInitialVel_XYZ");
-        
+        gameObject.transform.position = new Vector3(ballInitialPos_XYZ[0], ballInitialPos_XYZ[1], ballInitialPos_XYZ[2]);
 
-        float currentBlock = tr.block.number;
-        float currentTrial = tr.numberInBlock;
-    
-        Debug.Log("*** B:" + currentBlock + " T:" + currentTrial + " initialPos: " + ballInitialPos_XYZ);
-        Debug.Log("*** B:" + currentBlock + " T:" + currentTrial + " passingPos: " + ballPassingPos_XYZ);
-        Debug.Log("*** B:" + currentBlock + " T:" + currentTrial + " initialVel: " + ballInitialVel_XYZ);
-
-        Debug.Log($"*** B:{currentBlock} T:{currentTrial} initialPos: [{string.Join(", ", ballInitialPos_XYZ)}]");
-        Debug.Log($"*** B:{currentBlock} T:{currentTrial} passingPos: [{string.Join(", ", ballPassingPos_XYZ)}]");
-        Debug.Log($"*** B:{currentBlock} T:{currentTrial} initialVel: [{string.Join(", ", ballInitialVel_XYZ)}]");
+        // Randomize initial velocity
+        float ballInitialVel_X = (ballPassingPos_XYZ[0] - ballInitialPos_XYZ[0]) / secondsToPassage;
+        float ballInitialVel_Y = (-0.5f * gravity_xyz[1] * secondsToPassage * secondsToPassage + (ballPassingPos_XYZ[1] - ballInitialPos_XYZ[1])) / secondsToPassage;
+        float ballInitialVel_Z = (-initialBallRadiusM + ballPassingPos_XYZ[2] - ballInitialPos_XYZ[2]) / secondsToPassage;
+        List<float> ballInitialVel_XYZ = new List<float> { ballInitialVel_X, ballInitialVel_Y, ballInitialVel_Z };
+        tr.settings.SetValue("ballInitialVel_XYZ", new List<float> { ballInitialVel_X, ballInitialVel_Y, ballInitialVel_Z });
 
 
         // gameObject.SetActive(true);
@@ -79,26 +123,26 @@ public class BallBehavior : MonoBehaviour
         float ballRad = UXF_Session.settings.GetFloat("initialBallRadiusM");
         gameObject.transform.localScale = new Vector3(ballRad*2.0f,ballRad*2.0f,ballRad*2.0f);
 
-        gameObject.transform.localPosition = new Vector3(ballInitialPos_XYZ[0], ballInitialPos_XYZ[1], ballInitialPos_XYZ[2]);
         
-
+        
         if (UXF_Session.settings.GetBool("debugMode"))
         {
             GameObject debugTarget = GameObject.Find("CatchingEnvironment/DebugObjects/Target");
             Debug.Log("entered");
-            bool isLeftHanded = UXF_Session.settings.GetBool("isLeftHanded");
-            int isLeftHandedInt = isLeftHanded ? -1 : 1;
             debugTarget.transform.position = new Vector3(isLeftHandedInt * ballPassingPos_XYZ[0], ballPassingPos_XYZ[1], ballPassingPos_XYZ[2]);
 
         }
 
         Debug.Log("Ball has been placed.");
 
+        
+
     }
 
     public void launchBall(){
 
-
+        //DrawTrajectory(2.0f, 0.01f);
+        
         Debug.Log("A.");
 
         //    inflateOrDeflate = true;
@@ -119,163 +163,166 @@ public class BallBehavior : MonoBehaviour
         // Initialize layer timing
         T = UXF_Session.CurrentTrial.settings.GetFloat("secondsToPassage");
         elapsed = 0f;
+
         switchedToRDS = false;
 
         // Start fully visible
-        Color c = ballRenderer.material.color;
-        c.a = 1f;
-        ballRenderer.material.color = c;
+        // Color c = ballRenderer.material.color;
+        // c.a = 1f;
+        // ballRenderer.material.color = c;
 
         // Start on normal visible layer
-        gameObject.layer = LayerMask.NameToLayer("Default");
+        //gameObject.layer = LayerMask.NameToLayer("Default");
 
         //******
 
     }
 
+
+    public void DrawTrajectory(float simulationTime, float timeStep)
+    {
+        var tr = UXF_Session.CurrentTrial;
+        if (tr == null)
+        {
+            Debug.LogWarning("DrawTrajectory skipped: no current trial available.");
+            return;
+        }
+
+        List<float> initialPosList = tr.settings.GetFloatList("ballInitialPos_XYZ");
+        List<float> passingPosList = tr.settings.GetFloatList("ballPassingPos_XYZ");
+
+        // Velocity is stored as an object list when authored earlier, so retrieve via GetObject.
+        var initialVelObj = tr.settings.GetObject("ballInitialVel_XYZ");
+        if (initialVelObj is not List<float> initialVelList)
+        {
+            Debug.LogWarning("DrawTrajectory skipped: missing ballInitialVel_XYZ data on trial.");
+            return;
+        }
+
+        Vector3 initialPosition = new Vector3(initialPosList[0], initialPosList[1], initialPosList[2]);
+        Vector3 passingPosition = new Vector3(passingPosList[0], passingPosList[1], passingPosList[2]);
+        Vector3 initialVelocity = new Vector3(initialVelList[0], initialVelList[1], initialVelList[2]);
+
+        Vector3 gravity = Physics.gravity;
+        Vector3 currentPosition = initialPosition;
+        Vector3 currentVelocity = initialVelocity;
+
+        for (float t = 0; t < simulationTime; t += timeStep)
+        {
+            Vector3 nextPosition = currentPosition + currentVelocity * timeStep + 0.5f * gravity * timeStep * timeStep;
+            Vector3 nextVelocity = currentVelocity + gravity * timeStep;
+
+            Debug.DrawLine(currentPosition, nextPosition, Color.green, 5f);
+
+            currentPosition = nextPosition;
+            currentVelocity = nextVelocity;
+        }
+
+        Debug.DrawLine(currentPosition, passingPosition, Color.yellow, 5f);
+    }
     public void Update(){
         
         Vector3 vel = gameObject.GetComponent<Rigidbody>().linearVelocity;
 
-        // if( isInFlight ){
-        //     scaleBallRadiusByGain();
-        // }
-        //Ball changes to RDS environment
         
         if (!isInFlight) return;
 
         elapsed += Time.deltaTime;
-        float halfT = T * 0.5f;
 
-        // 0 → 0.5T: 
-        if (elapsed <= halfT)
-        {
-            float alpha = Mathf.Lerp(1f, 0f, elapsed / halfT);
-            Color c = ballRenderer.material.color;
-            c.a = alpha;
-            ballRenderer.material.color = c;
-        }
+        // Distance from world X-axis is the magnitude in the YZ plane.
+        Vector3 pos = transform.position;
+        float distanceToXAxis = Mathf.Sqrt(pos.y * pos.y + pos.z * pos.z);
 
+        // Line equation: alpha = slope * distance + intercept, intercept chosen so alpha=0 at alphaZeroDistance.
+        // float intercept = -alphaFadeSlope * alphaZeroDistance;
+        // float targetAlpha = Mathf.Clamp01(alphaFadeSlope * distanceToXAxis + intercept);
+
+        // Color c = ballRenderer.material.color;
+        // c.a = targetAlpha;
+        // ballRenderer.material.color = c;
+        
         // > 0.5T: switch to depth-only layer once
-        if (!switchedToRDS && elapsed > halfT)
+        if (!switchedToRDS &&  distanceToXAxis < alphaZeroDistance )
         {
             gameObject.layer = 6;   // DepthOnly
             switchedToRDS = true;
         }
                   
     }
+    void OnCollisionEnter(Collision collision)
+    {
+        // Only catch objects on the paddle layer (7)
+        if (collision.gameObject.layer != 7) return;
 
-    void OnCollisionEnter(Collision collision){
+        gameObject.layer = 0;
 
-        // Only proceed if the collision is with a paddle during an active trial
-        if (collision.gameObject.layer != LayerMask.NameToLayer("collision objects")) return;
-
-        if (UXF_Session.CurrentTrial.status != TrialStatus.InProgress) return;
-
-        // Ensure there is a contact point
-        if (collision.contactCount == 0) return;
-        ContactPoint contact = collision.contacts[0];
-
-        // Debug visualization
-        Debug.DrawRay(contact.point, contact.normal, Color.green, 2f);
-
-        // Get the Rigidbody for this ball
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb == null) return;
+        if (collision.contactCount == 0) return;
 
-        // Play contact sound
-        AudioSource.PlayClipAtPoint(contactSound, contact.point, 1.0f);
+        ContactPoint contact = collision.contacts[0];
 
-        // Stop any motion
-        rb.linearVelocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-        rb.useGravity = false;
+        // Only log / stick during an active trial
+        if (UXF_Session.CurrentTrial.status == TrialStatus.InProgress)
+        {
+            AudioSource.PlayClipAtPoint(contactSound, contact.point, 1.0f);
 
-        // Add a FixedJoint to attach the ball to the paddle’s rigidbody
-        // (If the paddle is kinematic, this still works correctly in Unity physics)
-        FixedJoint joint = gameObject.AddComponent<FixedJoint>();
-        joint.connectedBody = collision.rigidbody;  // Connect to the paddle’s rigidbody
-        joint.breakForce = Mathf.Infinity;
-        joint.breakTorque = Mathf.Infinity;
+            // Stop physics motion; we will drive the pose explicitly
+            rb.constraints = RigidbodyConstraints.None;
+            rb.useGravity = false;
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
 
-        // Record relevant data for your UXF trial
-        UXF_Session.CurrentTrial.result["isCaughtQ"] = true;
-        hasBeenCaughtQ = true;
-        contactLocOnPaddle = collision.transform.InverseTransformPoint(contact.point);
-        contactLocinWorld = contact.point;
-        timeOfContact = Time.time;
+            // Compute ball radius in world units
+            SphereCollider sphereCollider = GetComponent<SphereCollider>();
+            if (sphereCollider != null)
+            {
+                float maxScale = Mathf.Max(transform.lossyScale.x,
+                                        transform.lossyScale.y,
+                                        transform.lossyScale.z);
+                stuckRadius = sphereCollider.radius * maxScale;
+            }
+            else
+            {
+                stuckRadius = transform.localScale.x * 0.5f;
+            }
 
-        // Optional: adjust local offset for left vs. right handedness
-        Vector3 localPos = transform.localPosition;
-        float offset = transform.localScale.x / 2.0f;
-        localPos.x = UXF_Session.settings.GetBool("isLeftHanded") ? offset : -offset;
-        transform.localPosition = localPos;
+            // Store the contact geometry in paddle local coordinates
+            stuckPaddleTransform      = collision.collider.transform;
+            localContactPointOnPaddle = stuckPaddleTransform.InverseTransformPoint(contact.point);
+            localContactNormalOnPaddle =
+                stuckPaddleTransform.InverseTransformDirection(contact.normal).normalized;
 
-        // Log
-        Debug.Log("Ball attached to paddle with FixedJoint.");
+            isStuckToPaddle = true;
+
+            // Snap immediately so the *surface* of the ball meets the paddle
+            Vector3 worldContact = contact.point;
+            Vector3 worldNormal  = contact.normal.normalized;
+            Vector3 desiredCenter = worldContact + worldNormal * stuckRadius;
+            transform.position = desiredCenter;
+            transform.rotation = stuckPaddleTransform.rotation;
+
+            // Disable collider while stuck to avoid re-collisions
+            if (sphereCollider != null)
+                sphereCollider.enabled = false;
+
+            // UXF logging
+            UXF_Session.CurrentTrial.result["isCaughtQ"] = true;
+            hasBeenCaughtQ = true;
+            contactLocOnPaddle = stuckPaddleTransform.InverseTransformPoint(contact.point);
+            contactLocinWorld  = contact.point;
+            timeOfContact      = Time.time;
+        }
+
         isInFlight = false;
+        Debug.Log("Ball has collided and is now stuck to paddle (radius-correct).");
     }
-
-
-
-    // void OnCollisionEnter(Collision collision)
-    // {
-
-    //     Debug.DrawRay(collision.contacts[0].point, collision.contacts[0].normal, Color.green, 2, false);
-    //     // Debug.Log( "collide (name) : " + collision.collider.gameObject.name );
-    //     // Debug.Log( "collide (tag) : " + collision.collider.gameObject.tag );
-    //     gameObject.layer =0 ;
-
-        
-
-    //     Rigidbody rb = gameObject.GetComponent<Rigidbody>();
-
-    //     ContactPoint contact = collision.contacts[0];
-    //     gameObject.transform.position = contact.point;
-
-
-    //     if( collision.contacts[0].otherCollider.CompareTag("Paddle") && UXF_Session.CurrentTrial.status == TrialStatus.InProgress)  {
-
-    //         AudioSource.PlayClipAtPoint(contactSound, contact.point, 1.0f);
-
-    //         rb.constraints = RigidbodyConstraints.FreezeAll;
-    //         rb.useGravity = false;
-    //         rb.isKinematic = true;
-    //         rb.linearVelocity = new Vector3(0f, 0f, 0f);
-
-    //         gameObject.GetComponent<Transform>().SetParent(collision.contacts[0].otherCollider.transform.parent);
-
-
-    //         UXF_Session.CurrentTrial.result["isCaughtQ"] = true;
-    //         hasBeenCaughtQ = true;
-    //         contactLocOnPaddle = collision.contacts[0].otherCollider.transform.InverseTransformPoint(contact.point);
-    //         contactLocinWorld = contact.point;
-
-    //         if( UXF_Session.settings.GetBool("isLeftHanded") ){
-    //             transform.localPosition = new Vector3( transform.localScale.x/2.0f, transform.localPosition.y, transform.localPosition.z );
-    //         }
-    //         else{
-    //             transform.localPosition = new Vector3( -transform.localScale.x/2.0f, transform.localPosition.y, transform.localPosition.z );
-    //         }
-
-
-    //         timeOfContact = Time.time;
-    //     }
-
-    //     Debug.Log("Ball has collided and is now a child.");
-
-        
-
-    //     isInFlight = false;
-
-    // }
 
     public void removeBall()
     {
-
         Destroy(gameObject);
-
-        gameObject.GetComponent<MeshRenderer>().enabled = false;
+        // gameObject.GetComponent<MeshRenderer>().enabled = false;
         isInFlight = false;
 
         timeOfContact = float.NaN;
@@ -283,7 +330,9 @@ public class BallBehavior : MonoBehaviour
         contactLocinWorld = new Vector3(float.NaN, float.NaN, float.NaN);
         hasBeenCaughtQ = false;
 
-
+        // isStuckToPaddle = false;
+        // stuckPaddleTransform = null;
+        // stuckRadius = 0f;
 
     }
 
@@ -327,4 +376,22 @@ public class BallBehavior : MonoBehaviour
         // this code assumes that each component of the balls local scale is equal to its diameter        
 
     }
+
+    void LateUpdate()
+{
+    if (isStuckToPaddle && stuckPaddleTransform != null)
+    {
+        // Reconstruct contact point and normal in world space
+        Vector3 worldContact = stuckPaddleTransform.TransformPoint(localContactPointOnPaddle);
+        Vector3 worldNormal  = stuckPaddleTransform.TransformDirection(localContactNormalOnPaddle).normalized;
+
+        // Place ball so its *surface* lies at the contact point
+        Vector3 desiredCenter = worldContact + worldNormal * stuckRadius;
+        transform.position = desiredCenter;
+
+        // Optional: lock ball orientation to paddle
+        transform.rotation = stuckPaddleTransform.rotation;
+    }
+}
+
 }
