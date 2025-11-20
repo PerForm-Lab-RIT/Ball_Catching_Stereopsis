@@ -226,7 +226,7 @@ public class experimentGenerator : MonoBehaviour
         List<float> ballInitialPos_XYZ = tr.settings.GetFloatList("ballInitialPos_XYZ");
         Vector3 ballInitialPos = new Vector3(ballInitialPos_XYZ[0], ballInitialPos_XYZ[1], ballInitialPos_XYZ[2]);
 
-        GameObject Ball = Instantiate(ballPrefab, ballInitialPos, Quaternion.identity);// chanaged from 0,-10,0-6.5f, 1.5f, 18.0f
+        GameObject Ball = Instantiate(ballPrefab, ballInitialPos, Quaternion.identity);
         UXF_Session.trackedObjects.Add(Ball.GetComponent<BallTracker>());
 
         StartCoroutine(executeTrial());

@@ -575,7 +575,7 @@
                 {
                     "name": "",
                     "id": "946bcc86-5aae-4ef8-9c7c-b31865d83914",
-                    "path": "<Keyboard>/1",
+                    "path": "<Keyboard>/2",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -586,7 +586,18 @@
                 {
                     "name": "",
                     "id": "570c0ee2-676f-48c5-954b-823de5ff4dff",
-                    "path": "<Keyboard>/2",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Sample Body Dimensions",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b471341d-cd6d-4b6b-88f8-d2539884b120",
+                    "path": "<OculusTouchController>/secondaryButton",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

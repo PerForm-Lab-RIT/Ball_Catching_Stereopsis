@@ -6,8 +6,7 @@ using UXF;
 
 public class BallBehavior : MonoBehaviour
 {
-    //********
-    // Ball fade + depth-only timing
+    
     private float T;                 // total time-to-arrival (secondsToPassage)
     private float elapsed;           // time since launch
     private bool switchedToRDS = false; // whether we've switched to DepthOnly layer
@@ -20,7 +19,7 @@ public class BallBehavior : MonoBehaviour
     [Tooltip("Distance (meters) from the world X-axis where the ball becomes fully transparent (alpha = 0).")]
     public float alphaZeroDistance = 13.0f;
 
-    //****
+    
     private bool isBeingLaunched;
     private bool isInFlight;
 
@@ -344,7 +343,7 @@ public class BallBehavior : MonoBehaviour
 
         float xzDist = Mathf.Sqrt( Mathf.Pow(curBallPos_XYZ.x - curCameraPos_XYZ.x ,2.0f) + Mathf.Pow(curBallPos_XYZ.z-curCameraPos_XYZ.z ,2.0f));
         
-        // THis can be refined ... I'm not using hte ball's approach speed to the person
+        // THis can be refined ... I'm not using the ball's approach speed to the person
         // ...I am using the ball's speed through the world.
         float xzVel =  Mathf.Sqrt( Mathf.Pow( ballRb.linearVelocity.x,2) + Mathf.Pow(ballRb.linearVelocity.y,2));
         float timeToArrival = xzDist / xzVel;
