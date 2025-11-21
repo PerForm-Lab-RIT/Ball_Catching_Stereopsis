@@ -343,11 +343,11 @@ public class experimentGenerator : MonoBehaviour
         // If the controller is tracked, proceed with sampling
         if (!isLeftHanded)
         {
-            handTransform = GameObject.Find("RightHandAnchor").transform;
+            handTransform = GameObject.Find("OpenXRRightHand").transform;
         }
         else
         {
-            handTransform = GameObject.Find("LeftHandAnchor").transform;
+            handTransform = GameObject.Find("OpenXRLeftHand").transform;
         }
 
         Vector3 handInHeadSpace_xyz = Camera.main.transform.InverseTransformPoint(handTransform.position);
@@ -394,120 +394,18 @@ public class experimentGenerator : MonoBehaviour
         Debug.Log("Seat recentered!");
 
     }
-    public void Update()
+    void Update()
     {
-          
-        // // Step 1:  assess eyetracker calibration
-        // // triggerCablibration is a bool set elsewhere that is intended to trigger a calibration here.
-        // if ( calibrationAssessment.gridIsVisible == false && ( viveWand.getDpadDown() || triggerCablibration || Input.GetKeyDown(KeyCode.A)))
-        // {
-        //     // Start calibration assessment.
-        //     calibrationAssessment.showGrid();
-        //     triggerCablibration = false;
-        //     return;
-        // }
-        // else if (calibrationAssessment.gridIsVisible == true && ( viveWand.getDpadDown() || Input.GetKeyDown(KeyCode.F1)))
-        // {
-        //     // Hide calibration assessment.
-        //     calibrationAssessment.hideGrid();
-        //     triggerCablibration = false;
-        //     return;
-
-        // }
-
-
-        // // Step 2:  set body dimension
-
-
-        // // Prevents experiment from beginning unless body dimensions have been set.
-        // if ( calibrationAssessment.gridIsVisible == false && ( viveWand.getDpadUp() || Input.GetKeyDown(KeyCode.F2)))
-        // {
-        //     sampleEyeHeightAndArmLength();
-        //     resetSeatedPosition();
-            
-        //     bodyDimensionsSet = true;
-        //     repositionDebugObjects();
-        //     Debug.Log("Body dimensions sampled.");
-   
-        //     return;
-
-        // }
-        // else if (calibrationAssessment.gridIsVisible == false && bodyDimensionsSet == false && Input.anyKeyDown)
-        // {
-        //     Debug.Log("Must set body dimensions to continue (press F2 to set).");
-        //     return;
-
-        // }
-
-        //// Step 2.5: set controller reset location
-        //// must return controller to within this box before trigger can be pressed to launch ball
-        //if (calibrationAssessment.gridIsVisible == false && Input.GetKeyDown(KeyCode.F3))
-        //{
-        //    Vector3 resetControllerPos = handTransform.position;
-        //    resetController.transform.position = resetControllerPos;
-        //    resetController.SetActive(true);
-        //    resetControllerLocation = true;
-        //    return;
-
-        //}
-        //else if (calibrationAssessment.gridIsVisible == false && resetControllerLocation == false && (Input.anyKeyDown || viveWand.getTrigger()))
-        //{
-        //    Debug.Log("Must set trigger reset box location to continue (press F3 to set).");
-        //    return;
-
-        //}
         
-        // // Step 3:  launch balls
-        // if (trialInProgress == false)
-        // {
-        //     if (Input.GetKeyDown(KeyCode.Space) || OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger))
-        //     {
-        //         if (sessionHasBeenCreated == false)
-        //         {
-        //             generateSession();
-        //         }
+        if( OVRInput.Get(OVRInput.RawButton.Y) || OVRInput.Get(OVRInput.RawButton.B) )
+        {
+            sampleEyeHeightAndArmLength();
+        }
 
-        //         if (debugMode == false )//& changeBoxColor.flag)
-        //         {
-        //             placeAndLaunchBall();
-        //         }
-        //         else if(debugMode == true)
-        //         {
-        //             placeAndLaunchBall();
-        //         }
-
-        //         return;
-        //     }
-        // }
-
-
-
-
-        // if ( calibrationAssessment.gridIsVisible == false &&
-        //      trialInProgress == false)
-            
-        // {
-        //     if (Input.GetKeyDown(KeyCode.Space) || viveWand.getTrigger() )
-        //     {
-
-        //         if (sessionHasBeenCreated == false)
-        //         {
-
-        //             generateSession();
-
-        //         }
-        //         if (debugMode == false & changeBoxColor.flag) // if box is green, controller is in right location to launch the ball (touching the reset box)
-        //         {
-        //             placeAndLaunchBall();
-        //         }
-        //         else if(debugMode == true)  // if in debug mode, don't bother checking for controller position
-        //         {
-        //             placeAndLaunchBall();
-        //         }
-                
-        //         return;
-        //     }
-        // }
+        if( OVRInput.Get(OVRInput.RawButton.A) || OVRInput.Get(OVRInput.RawButton.X) )
+        {
+            placeAndLaunchBall();
+        }
 
     }
 

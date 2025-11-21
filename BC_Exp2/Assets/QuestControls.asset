@@ -13,4 +13,7 @@ MonoBehaviour:
   m_Name: QuestControls
   m_EditorClassIdentifier: 
   InteractionProfile: 
-  InputActionDefinitions: []
+  InputActionDefinitions:
+  - ActionName: 
+    Type: 0
+    Paths: []
