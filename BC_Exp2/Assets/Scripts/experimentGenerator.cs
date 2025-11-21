@@ -27,13 +27,16 @@ public class experimentGenerator : MonoBehaviour
 
     public Transform handTransform;
 
-    public InputActionReference primaryButtonAction;
- 
+    public InputActionReference set_body_dimensions_action;
+    public InputActionReference launch_ball_action;
+
     public void Start()
     {
         
 
         GameObject.Find("CatchingEnvironment").SetActive(true);
+        set_body_dimensions_action.action.performed += OnSetBodyDimensions;
+        launch_ball_action.action.performed += onLaunchBall;
 
         
         //GameObject.Find("CatchingEnvironment/DebugObjects").SetActive(false);
@@ -333,12 +336,12 @@ public class experimentGenerator : MonoBehaviour
             ? InputDevices.GetDeviceAtXRNode(XRNode.LeftHand) 
             : InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
 
-        bool isTracked = false;
-        if (!controllerDevice.TryGetFeatureValue(UnityEngine.XR.CommonUsages.isTracked, out isTracked) || !isTracked)
-        {
-            Debug.LogWarning("Controller pose is not valid or not tracked.");
-            return; // Exit the method if the controller is not tracked
-        }
+        // bool isTracked = false;
+        // if (!controllerDevice.TryGetFeatureValue(UnityEngine.XR.CommonUsages.isTracked, out isTracked) || !isTracked)
+        // {
+        //     Debug.LogWarning("Controller pose is not valid or not tracked.");
+        //     return; // Exit the method if the controller is not tracked
+        // }
 
         // If the controller is tracked, proceed with sampling
         if (!isLeftHanded)
@@ -394,19 +397,34 @@ public class experimentGenerator : MonoBehaviour
         Debug.Log("Seat recentered!");
 
     }
-    void Update()
+
+    public void OnSetBodyDimensions(InputAction.CallbackContext context)
     {
-        
-        if( OVRInput.Get(OVRInput.RawButton.Y) || OVRInput.Get(OVRInput.RawButton.B) )
-        {
-            sampleEyeHeightAndArmLength();
-        }
-
-        if( OVRInput.Get(OVRInput.RawButton.A) || OVRInput.Get(OVRInput.RawButton.X) )
-        {
-            placeAndLaunchBall();
-        }
-
+        Debug.Log("Set body dimensions action performed.");
+        sampleEyeHeightAndArmLength();
     }
+
+    public void onLaunchBall(InputAction.CallbackContext context)
+    {
+        Debug.Log("Launch ball action performed.");
+        placeAndLaunchBall();
+    }
+
+
+    
+    // public void Update()
+    // {
+        
+    //     // if( OVRInput.Get(OVRInput.RawButton.Y) || OVRInput.Get(OVRInput.RawButton.B) )
+    //     // {
+    //     //     sampleEyeHeightAndArmLength();
+    //     // }
+
+    //     // if( OVRInput.Get(OVRInput.RawButton.A) || OVRInput.Get(OVRInput.RawButton.X) )
+    //     // {
+    //     //     placeAndLaunchBall();
+    //     // }
+
+    // }
 
 }

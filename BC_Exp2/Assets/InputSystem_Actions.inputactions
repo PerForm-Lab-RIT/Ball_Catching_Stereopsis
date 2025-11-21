@@ -552,8 +552,8 @@
             "bindings": [
                 {
                     "name": "",
-                    "id": "d9ead4ba-24f4-4c53-a11e-36624c293708",
-                    "path": "<OculusTouchController>/primaryButton",
+                    "id": "1c80d8a9-3e23-47c1-94ee-38bac3195aa1",
+                    "path": "<Keyboard>/space",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -563,8 +563,8 @@
                 },
                 {
                     "name": "",
-                    "id": "1c80d8a9-3e23-47c1-94ee-38bac3195aa1",
-                    "path": "<Keyboard>/space",
+                    "id": "445fb971-cad6-4d11-9d5f-533dc7e2ac80",
+                    "path": "<XRController>{RightHand}/{PrimaryButton}",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -596,8 +596,8 @@
                 },
                 {
                     "name": "",
-                    "id": "b471341d-cd6d-4b6b-88f8-d2539884b120",
-                    "path": "<OculusTouchController>/secondaryButton",
+                    "id": "14f44175-43d8-41e2-82f9-e6fb2a31dfc5",
+                    "path": "<XRController>{RightHand}/{SecondaryButton}",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

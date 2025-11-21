@@ -4,7 +4,10 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Ball_Catching_RDS.unity
+    guid: fadcc1480717119479aa6d8c5ae1ad7e
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: a297a30673db0c3439d9cea09ac73526, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 289c1b55c9541489481df5cc06664110, type: 3}
